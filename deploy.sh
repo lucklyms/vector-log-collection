@@ -50,7 +50,15 @@ fi
 
 echo ""
 echo "步驟 1: 創建必要目錄..."
-mkdir -p iis-logs apache-logs app-logs logs
+# 詢問用戶要掛載到哪個目錄
+if [ -z "$LOG_DIR" ]; then
+    read -p "請輸入日誌存放的底層目錄 [預設: /var/log/vector-collected]: " LOG_DIR
+    LOG_DIR=${LOG_DIR:-/var/log/vector-collected}
+fi
+
+echo "日誌將存放在: $LOG_DIR"
+sudo mkdir -p "$LOG_DIR"
+mkdir -p iis-logs apache-logs app-logs
 echo "✓ 目錄創建完成"
 
 echo ""
@@ -70,7 +78,7 @@ $CONTAINER_CMD run -d --name vector-unified \
   -v ./iis-logs:/iis-logs${VOLUME_FLAG} \
   -v ./apache-logs:/apache-logs${VOLUME_FLAG} \
   -v ./app-logs:/app-logs${VOLUME_FLAG} \
-  -v ./logs:/var/log/vector${VOLUME_FLAG} \
+  -v "$LOG_DIR":/var/log/vector${VOLUME_FLAG} \
   timberio/vector:latest-alpine --config /etc/vector/vector.toml
 
 echo "✓ 容器啟動完成"
@@ -113,5 +121,10 @@ echo "  查看狀態: $CONTAINER_CMD ps"
 echo "  停止服務: $CONTAINER_CMD stop vector-unified"
 echo "  重啟服務: $CONTAINER_CMD restart vector-unified"
 echo ""
-echo "收集的日誌位置: ./logs/"
+echo "收集的日誌位置: $LOG_DIR"
+echo ""
+echo "所有遠端主機發送方式："
+echo "  HTTP: curl -X POST http://$(hostname -I | awk '{print $1}'):8080 -H 'Content-Type: application/json' -d '{\"message\":\"test\"}'"
+echo "  Syslog UDP: logger -n $(hostname -I | awk '{print $1}') -P 5514 'test'"
+echo "  Syslog TCP: logger -n $(hostname -I | awk '{print $1}') -P 5601 -T 'test'"
 echo ""
