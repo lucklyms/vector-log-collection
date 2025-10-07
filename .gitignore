@@ -1,0 +1,10 @@
+# 忽略日誌文件（這些是運行時產生的）
+logs/
+app-logs/
+iis-logs/
+apache-logs/
+
+# 忽略臨時文件
+*.tmp
+*.swp
+*~

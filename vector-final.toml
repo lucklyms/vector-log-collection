@@ -1,0 +1,85 @@
+# Vector 統一日誌收集配置 - 最終版本
+
+[api]
+  enabled = true
+  address = "0.0.0.0:8686"
+
+# ==================== 數據源 ====================
+
+# HTTP 接收
+[sources.http_logs]
+  type = "http_server"
+  address = "0.0.0.0:8080"
+  encoding = "json"
+
+# Syslog UDP
+[sources.syslog_udp]
+  type = "syslog"
+  mode = "udp"
+  address = "0.0.0.0:5514"
+
+# Syslog TCP
+[sources.syslog_tcp]
+  type = "syslog"
+  mode = "tcp"
+  address = "0.0.0.0:5601"
+
+# IIS 日誌文件
+[sources.iis_logs]
+  type = "file"
+  include = ["/iis-logs/**/*.log"]
+  read_from = "beginning"
+
+# Apache 日誌
+[sources.apache_logs]
+  type = "file"
+  include = ["/apache-logs/**/*.log"]
+  read_from = "beginning"
+
+# 應用日誌
+[sources.app_logs]
+  type = "file"
+  include = ["/app-logs/**/*.log"]
+  read_from = "beginning"
+
+# ==================== 日誌轉換 ====================
+
+# HTTP 日誌
+[transforms.tag_http]
+  type = "remap"
+  inputs = ["http_logs"]
+  source = '''
+    .log_type = "http"
+    .collected_at = now()
+  '''
+
+# Syslog
+[transforms.tag_syslog]
+  type = "remap"
+  inputs = ["syslog_udp", "syslog_tcp"]
+  source = '''
+    .log_type = "syslog"
+    .collected_at = now()
+  '''
+
+# 文件日誌
+[transforms.tag_files]
+  type = "remap"
+  inputs = ["iis_logs", "apache_logs", "app_logs"]
+  source = '''
+    .log_type = "file"
+    .collected_at = now()
+  '''
+
+# ==================== 輸出 ====================
+
+[sinks.console]
+  type = "console"
+  inputs = ["tag_http", "tag_syslog", "tag_files"]
+  encoding.codec = "json"
+
+[sinks.file_output]
+  type = "file"
+  inputs = ["tag_http", "tag_syslog", "tag_files"]
+  path = "/var/log/vector/unified-%Y-%m-%d.log"
+  encoding.codec = "json"

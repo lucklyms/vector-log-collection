@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  # Vector - 日誌收集器
+  vector:
+    image: timberio/vector:latest-alpine
+    container_name: vector
+    volumes:
+      - ./vector.toml:/etc/vector/vector.toml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # 讓 Vector 能讀取 Docker 容器日誌
+      - ./logs:/var/log/vector  # 收集的日誌輸出目錄
+    networks:
+      - log-network
+    depends_on:
+      - app
+
+  # 測試應用 - 持續產生日誌
+  app:
+    image: alpine:latest
+    container_name: test-app
+    command: sh -c "while true; do echo '{\"level\":\"info\",\"message\":\"Application is running\",\"timestamp\":\"'$$(date -u +%Y-%m-%dT%H:%M:%SZ)'\"}'; sleep 2; echo '{\"level\":\"warn\",\"message\":\"High memory usage detected\",\"value\":'$$RANDOM'}'; sleep 3; echo '{\"level\":\"error\",\"message\":\"Failed to connect to database\",\"retry\":true}'; sleep 5; done"
+    networks:
+      - log-network
+
+networks:
+  log-network:
+    driver: bridge
