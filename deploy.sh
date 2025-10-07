@@ -16,8 +16,36 @@ elif command -v docker &> /dev/null; then
     VOLUME_FLAG=""
     echo "✓ 檢測到 Docker"
 else
-    echo "✗ 錯誤：未安裝 Docker 或 Podman"
-    exit 1
+    echo "⚠ 未安裝 Docker 或 Podman，正在自動安裝 Docker..."
+
+    # 檢測系統類型並安裝 Docker
+    if [ -f /etc/debian_version ]; then
+        # Debian/Ubuntu
+        echo "檢測到 Debian/Ubuntu 系統"
+        sudo apt-get update
+        sudo apt-get install -y docker.io
+        sudo systemctl start docker
+        sudo systemctl enable docker
+    elif [ -f /etc/redhat-release ]; then
+        # RHEL/CentOS/Rocky
+        echo "檢測到 RHEL/CentOS 系統"
+        sudo yum install -y docker
+        sudo systemctl start docker
+        sudo systemctl enable docker
+    elif [ -f /etc/arch-release ]; then
+        # Arch Linux
+        echo "檢測到 Arch Linux"
+        sudo pacman -S --noconfirm docker
+        sudo systemctl start docker
+        sudo systemctl enable docker
+    else
+        echo "✗ 不支援的系統，請手動安裝 Docker"
+        exit 1
+    fi
+
+    CONTAINER_CMD="docker"
+    VOLUME_FLAG=""
+    echo "✓ Docker 安裝完成"
 fi
 
 echo ""
