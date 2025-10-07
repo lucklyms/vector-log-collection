@@ -1,0 +1,91 @@
+# Vector Agent 配置 - 安裝在遠端主機上
+# 自動收集本機所有日誌並回傳到中央 Vector 伺服器
+
+# ==================== 數據源 ====================
+
+# 收集系統日誌 (journald)
+[sources.journald]
+  type = "journald"
+  current_boot_only = false
+
+# 收集 syslog
+[sources.syslog_file]
+  type = "file"
+  include = ["/var/log/syslog", "/var/log/messages"]
+  read_from = "beginning"
+
+# 收集 Apache 日誌
+[sources.apache_access]
+  type = "file"
+  include = ["/var/log/apache2/access*.log", "/var/log/httpd/access*.log"]
+  read_from = "beginning"
+
+[sources.apache_error]
+  type = "file"
+  include = ["/var/log/apache2/error*.log", "/var/log/httpd/error*.log"]
+  read_from = "beginning"
+
+# 收集 Nginx 日誌
+[sources.nginx_access]
+  type = "file"
+  include = ["/var/log/nginx/access*.log"]
+  read_from = "beginning"
+
+[sources.nginx_error]
+  type = "file"
+  include = ["/var/log/nginx/error*.log"]
+  read_from = "beginning"
+
+# 收集應用日誌
+[sources.app_logs]
+  type = "file"
+  include = ["/var/log/app/**/*.log", "/opt/app/logs/**/*.log"]
+  read_from = "beginning"
+
+# 收集 Docker 容器日誌
+[sources.docker_logs]
+  type = "docker_logs"
+
+# ==================== 數據轉換 ====================
+
+# 添加主機資訊
+[transforms.add_host_info]
+  type = "remap"
+  inputs = ["journald", "syslog_file", "apache_*", "nginx_*", "app_logs", "docker_logs"]
+  source = '''
+    .agent_hostname = get_hostname!()
+    .collected_at = now()
+    .source_agent = "vector-agent"
+  '''
+
+# ==================== 輸出到中央伺服器 ====================
+
+# HTTP 方式回傳（最推薦）
+[sinks.send_to_central]
+  type = "http"
+  inputs = ["add_host_info"]
+  uri = "http://VECTOR_SERVER_IP:8080"
+  encoding.codec = "json"
+
+  # 批次發送設定
+  batch.max_bytes = 1048576  # 1MB
+  batch.timeout_secs = 5
+
+  # 重試設定
+  request.retry_attempts = 5
+  request.retry_initial_backoff_secs = 1
+
+# 備用：Syslog 方式回傳
+[sinks.send_to_central_syslog]
+  type = "socket"
+  inputs = ["add_host_info"]
+  mode = "tcp"
+  address = "VECTOR_SERVER_IP:5601"
+  encoding.codec = "json"
+
+# 本地備份（可選）
+[sinks.local_backup]
+  type = "file"
+  inputs = ["add_host_info"]
+  path = "/var/log/vector-agent/backup-%Y-%m-%d.log"
+  encoding.codec = "json"
