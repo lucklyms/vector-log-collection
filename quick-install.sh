@@ -52,11 +52,20 @@ else
     fi
 fi
 
+# 建立必要目錄（先建立，再配置）
+echo ""
+echo "步驟 3: 建立必要目錄..."
+mkdir -p /var/log/vector-agent
+mkdir -p /var/lib/vector
+mkdir -p /etc/vector
+chown -R root:root /var/lib/vector
+chmod 755 /var/lib/vector
+echo "✓ 目錄建立完成"
+
 # 下載並配置 Vector Agent
 echo ""
-echo "步驟 3: 配置 Vector Agent..."
+echo "步驟 4: 配置 Vector Agent..."
 
-mkdir -p /etc/vector
 curl -fsSL https://raw.githubusercontent.com/lucklyms/vector-log-collection/master/vector-agent-simple.toml -o /etc/vector/vector.toml
 
 # 替換伺服器 IP
@@ -70,15 +79,6 @@ else
     echo "✗ 配置檔有錯誤"
     exit 1
 fi
-
-# 建立必要目錄
-echo ""
-echo "步驟 4: 建立必要目錄..."
-mkdir -p /var/log/vector-agent
-mkdir -p /var/lib/vector
-chown -R root:root /var/lib/vector
-chmod 755 /var/lib/vector
-echo "✓ 目錄建立完成"
 
 # 建立 systemd 服務檔
 echo ""
