@@ -12,34 +12,40 @@
 [sources.syslog_file]
   type = "file"
   include = ["/var/log/syslog", "/var/log/messages"]
+  exclude = ["/var/log/vector/**", "/var/log/vector-agent/**"]
   read_from = "beginning"
 
 # 收集 Apache 日誌
 [sources.apache_access]
   type = "file"
   include = ["/var/log/apache2/access*.log", "/var/log/httpd/access*.log"]
+  exclude = ["/var/log/vector/**", "/var/log/vector-agent/**"]
   read_from = "beginning"
 
 [sources.apache_error]
   type = "file"
   include = ["/var/log/apache2/error*.log", "/var/log/httpd/error*.log"]
+  exclude = ["/var/log/vector/**", "/var/log/vector-agent/**"]
   read_from = "beginning"
 
 # 收集 Nginx 日誌
 [sources.nginx_access]
   type = "file"
   include = ["/var/log/nginx/access*.log"]
+  exclude = ["/var/log/vector/**", "/var/log/vector-agent/**"]
   read_from = "beginning"
 
 [sources.nginx_error]
   type = "file"
   include = ["/var/log/nginx/error*.log"]
+  exclude = ["/var/log/vector/**", "/var/log/vector-agent/**"]
   read_from = "beginning"
 
-# 收集應用日誌
+# 收集應用日誌（排除 Vector 自己的日誌避免迴圈）
 [sources.app_logs]
   type = "file"
   include = ["/var/log/app/**/*.log", "/opt/app/logs/**/*.log"]
+  exclude = ["/var/log/vector/**", "/var/log/vector-agent/**"]
   read_from = "beginning"
 
 # 收集 Docker 容器日誌
@@ -83,9 +89,11 @@
   address = "VECTOR_SERVER_IP:5601"
   encoding.codec = "json"
 
-# 本地備份（可選）
+# 本地備份（可選）- 存放到不會被收集的目錄
 [sinks.local_backup]
   type = "file"
   inputs = ["add_host_info"]
   path = "/var/log/vector-agent/backup-%Y-%m-%d.log"
   encoding.codec = "json"
+
+  # 注意：/var/log/vector-agent/** 已在 app_logs source 中被排除
