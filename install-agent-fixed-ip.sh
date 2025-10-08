@@ -38,20 +38,42 @@ else
     if [ -f /etc/debian_version ]; then
         # Debian/Ubuntu
         echo "檢測到 Debian/Ubuntu 系統"
-        curl -1sLf 'https://repositories.timber.io/public/vector/cfg/setup/bash.deb.sh' | bash
-        apt-get install -y vector
+        echo "安裝必要套件..."
+        apt-get update
+        apt-get install -y curl gnupg lsb-release
+
+        echo "新增 Vector 套件庫..."
+        curl -1sLf 'https://repositories.timber.io/public/vector/gpg.3543DB2D0A2BC4B8.key' | gpg --dearmor > /usr/share/keyrings/timber-vector-archive-keyring.gpg
+        curl -1sLf 'https://repositories.timber.io/public/vector/config.deb.txt?distro=debian&codename=bullseye' > /etc/apt/sources.list.d/timber-vector.list
+
+        echo "更新套件列表並安裝 Vector..."
+        apt-get update
+        apt-get install -y vector || {
+            echo "⚠ 套件庫安裝失敗，使用二進位安裝..."
+            curl --proto '=https' --tlsv1.2 -sSfL https://sh.vector.dev | bash -s -- -y
+            ln -sf $HOME/.vector/bin/vector /usr/local/bin/vector
+        }
     elif [ -f /etc/redhat-release ]; then
         # RHEL/CentOS/Rocky
         echo "檢測到 RHEL/CentOS 系統"
         curl -1sLf 'https://repositories.timber.io/public/vector/cfg/setup/bash.rpm.sh' | bash
-        yum install -y vector
+        yum install -y vector || {
+            echo "⚠ 套件庫安裝失敗，使用二進位安裝..."
+            curl --proto '=https' --tlsv1.2 -sSfL https://sh.vector.dev | bash -s -- -y
+            ln -sf $HOME/.vector/bin/vector /usr/local/bin/vector
+        }
     elif [ -f /etc/arch-release ]; then
         # Arch Linux
         echo "檢測到 Arch Linux"
-        pacman -S --noconfirm vector
+        pacman -S --noconfirm vector || {
+            echo "⚠ 套件安裝失敗，使用二進位安裝..."
+            curl --proto '=https' --tlsv1.2 -sSfL https://sh.vector.dev | bash -s -- -y
+            ln -sf $HOME/.vector/bin/vector /usr/local/bin/vector
+        }
     else
-        echo "✗ 不支援的系統，嘗試使用 shell 安裝..."
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.vector.dev | bash
+        echo "使用通用安裝方式..."
+        curl --proto '=https' --tlsv1.2 -sSfL https://sh.vector.dev | bash -s -- -y
+        ln -sf $HOME/.vector/bin/vector /usr/local/bin/vector
     fi
     echo "✓ Vector 安裝完成"
 fi
