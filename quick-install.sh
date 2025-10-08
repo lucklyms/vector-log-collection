@@ -57,12 +57,19 @@ echo ""
 echo "步驟 3: 配置 Vector Agent..."
 
 mkdir -p /etc/vector
-curl -fsSL https://raw.githubusercontent.com/lucklyms/vector-log-collection/master/vector-agent.toml -o /etc/vector/vector.toml
+curl -fsSL https://raw.githubusercontent.com/lucklyms/vector-log-collection/master/vector-agent-simple.toml -o /etc/vector/vector.toml
 
 # 替換伺服器 IP
 sed -i "s/VECTOR_SERVER_IP/$VECTOR_SERVER/g" /etc/vector/vector.toml
 
-echo "✓ 配置完成"
+# 驗證配置檔
+echo "驗證配置檔..."
+if /usr/local/bin/vector validate /etc/vector/vector.toml; then
+    echo "✓ 配置檔驗證通過"
+else
+    echo "✗ 配置檔有錯誤"
+    exit 1
+fi
 
 # 建立日誌目錄
 echo ""
