@@ -28,5 +28,6 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/lucklyms/vector-log-collection/master/deploy.sh -o deploy.sh
           chmod +x deploy.sh
 
-          # 執行部署
+          # 設定環境變數並執行部署
+          export LOG_DIR=/var/log/vector-collected
           ./deploy.sh

@@ -60,7 +60,18 @@ if [ -z "$LOG_DIR" ]; then
 fi
 
 echo "日誌將存放在: $LOG_DIR"
-mkdir -p "$LOG_DIR" || sudo mkdir -p "$LOG_DIR"
+
+# 嘗試建立目錄（如果失敗，可能是權限問題）
+if ! mkdir -p "$LOG_DIR" 2>/dev/null; then
+    # 如果有 sudo，使用 sudo
+    if command -v sudo &> /dev/null; then
+        sudo mkdir -p "$LOG_DIR"
+    else
+        echo "✗ 錯誤：無法建立目錄 $LOG_DIR"
+        exit 1
+    fi
+fi
+
 mkdir -p iis-logs apache-logs app-logs
 echo "✓ 目錄創建完成"
 
