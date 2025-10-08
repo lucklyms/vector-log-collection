@@ -50,14 +50,17 @@ fi
 
 echo ""
 echo "步驟 1: 創建必要目錄..."
-# 詢問用戶要掛載到哪個目錄
+# 設定日誌目錄（支援非互動模式）
 if [ -z "$LOG_DIR" ]; then
-    read -p "請輸入日誌存放的底層目錄 [預設: /var/log/vector-collected]: " LOG_DIR
+    # 如果在非互動環境（如 CI/CD），使用預設值
+    if [ -t 0 ]; then
+        read -p "請輸入日誌存放的底層目錄 [預設: /var/log/vector-collected]: " LOG_DIR
+    fi
     LOG_DIR=${LOG_DIR:-/var/log/vector-collected}
 fi
 
 echo "日誌將存放在: $LOG_DIR"
-sudo mkdir -p "$LOG_DIR"
+mkdir -p "$LOG_DIR" || sudo mkdir -p "$LOG_DIR"
 mkdir -p iis-logs apache-logs app-logs
 echo "✓ 目錄創建完成"
 
