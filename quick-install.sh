@@ -71,10 +71,13 @@ else
     exit 1
 fi
 
-# 建立日誌目錄
+# 建立必要目錄
 echo ""
 echo "步驟 4: 建立必要目錄..."
 mkdir -p /var/log/vector-agent
+mkdir -p /var/lib/vector
+chown -R root:root /var/lib/vector
+chmod 755 /var/lib/vector
 echo "✓ 目錄建立完成"
 
 # 建立 systemd 服務檔
