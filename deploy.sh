@@ -77,10 +77,16 @@ mkdir -p iis-logs apache-logs app-logs
 echo "✓ 目錄創建完成"
 
 echo ""
-echo "步驟 2: 停止舊容器（如果存在）..."
-$CONTAINER_CMD stop vector-unified 2>/dev/null || true
-$CONTAINER_CMD rm vector-unified 2>/dev/null || true
-echo "✓ 清理完成"
+echo "步驟 2: 停止並移除舊容器（如果存在）..."
+# 強制停止並移除舊容器
+if $CONTAINER_CMD ps -a | grep -q vector-unified; then
+    echo "發現舊容器，正在移除..."
+    $CONTAINER_CMD stop vector-unified 2>/dev/null || true
+    $CONTAINER_CMD rm -f vector-unified 2>/dev/null || true
+    echo "✓ 舊容器已移除"
+else
+    echo "✓ 沒有舊容器"
+fi
 
 echo ""
 echo "步驟 3: 啟動 Vector 容器..."
