@@ -70,12 +70,34 @@ echo "步驟 4: 建立必要目錄..."
 mkdir -p /var/log/vector-agent
 echo "✓ 目錄建立完成"
 
-# 啟動 Vector Agent
+# 建立 systemd 服務檔
 echo ""
-echo "步驟 5: 啟動 Vector Agent 服務..."
+echo "步驟 5: 建立 systemd 服務..."
 
 if command -v systemctl &> /dev/null; then
-    # 使用 systemd
+    cat > /etc/systemd/system/vector.service <<'EOF'
+[Unit]
+Description=Vector Log Agent
+Documentation=https://vector.dev
+After=network-online.target
+Requires=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+ExecStart=/usr/local/bin/vector --config /etc/vector/vector.toml
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    echo "✓ systemd 服務檔已建立"
+
+    # 重新載入 systemd 並啟動服務
+    systemctl daemon-reload
     systemctl enable vector
     systemctl restart vector
 
