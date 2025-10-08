@@ -8,10 +8,11 @@
   type = "journald"
   current_boot_only = false
 
-# 收集 /var/log 下的所有 log 文件
+# 收集 /var/log 下的所有 log 文件（排除 Vector 自己的日誌避免迴圈）
 [sources.var_log_all]
   type = "file"
   include = ["/var/log/**/*.log"]
+  exclude = ["/var/log/vector/**", "/var/log/vector-agent/**"]
   read_from = "end"
   ignore_older_secs = 86400
 
@@ -26,6 +27,7 @@
     "/var/log/kern.log",
     "/var/log/daemon.log"
   ]
+  exclude = ["/var/log/vector/**", "/var/log/vector-agent/**"]
   read_from = "end"
   ignore_older_secs = 86400
 
@@ -58,9 +60,11 @@
   request.retry_attempts = 5
   request.retry_initial_backoff_secs = 1
 
-# 本地備份
+# 本地備份（存放到已排除的目錄）
 [sinks.local_backup]
   type = "file"
   inputs = ["add_host_info"]
   path = "/var/log/vector-agent/backup-%Y-%m-%d.log"
   encoding.codec = "json"
+
+  # 注意：/var/log/vector-agent/** 已在上方 sources 中被排除
