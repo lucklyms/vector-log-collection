@@ -79,7 +79,14 @@
   inputs = ["tag_http", "tag_syslog", "tag_files"]
   source = '''
     .source_ip = .agent_hostname || .host || "unknown"
-    .log_time = format_timestamp!(.timestamp, format: "%Y-%m-%d %H:%M:%S")
+
+    # 處理時間戳（可能是字串或 timestamp 類型）
+    ts = .timestamp
+    if is_string(ts) {
+      .log_time = ts
+    } else {
+      .log_time = format_timestamp!(ts, format: "%Y-%m-%d %H:%M:%S")
+    }
 
     # 安全處理 message 欄位
     if exists(.message) {
