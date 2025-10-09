@@ -60,7 +60,7 @@
 [transforms.filter_vector_logs]
   type = "filter"
   inputs = ["syslog_file"]
-  condition = '!includes(string!(.message), "vector[") && !includes(string!(.message), "vector:")'
+  condition = '!contains(string!(.message), "vector[") && !contains(string!(.message), "vector:")'
 
 # 添加主機資訊
 [transforms.add_host_info]

@@ -39,7 +39,7 @@
 [transforms.filter_vector_logs]
   type = "filter"
   inputs = ["var_log_system"]
-  condition = '!includes(string!(.message), "vector[") && !includes(string!(.message), "vector:")'
+  condition = '!contains(string!(.message), "vector[") && !contains(string!(.message), "vector:")'
 
 # 添加主機資訊
 [transforms.add_host_info]
