@@ -19,14 +19,13 @@
   ignore_older_secs = 86400
 
 # 收集常見的系統日誌文件（無副檔名）
+# 注意：這些檔案沒有 .log 副檔名，var_log_all 收集不到，所以需要單獨收集
+# 但要避免與 var_log_all 重複收集同一個檔案
 [sources.var_log_system]
   type = "file"
   include = [
-    "/var/log/syslog",
     "/var/log/messages",
-    "/var/log/auth.log",
     "/var/log/secure",
-    "/var/log/kern.log",
     "/var/log/daemon.log"
   ]
   exclude = ["/var/log/vector/**", "/var/log/vector-agent/**"]
