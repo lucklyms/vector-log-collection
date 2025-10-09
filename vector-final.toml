@@ -73,13 +73,27 @@
 
 # ==================== 輸出 ====================
 
+# 格式化日誌：來源IP | 時間 | 日誌內容
+[transforms.format_logs]
+  type = "remap"
+  inputs = ["tag_http", "tag_syslog", "tag_files"]
+  source = '''
+    source_ip = .agent_hostname ?? .host ?? "unknown"
+    timestamp = format_timestamp!(.timestamp ?? now(), format: "%Y-%m-%d %H:%M:%S")
+    log_message = to_string(.message) ?? to_string(.)
+
+    .formatted = source_ip + " | " + timestamp + " | " + log_message
+  '''
+
 [sinks.console]
   type = "console"
-  inputs = ["tag_http", "tag_syslog", "tag_files"]
-  encoding.codec = "json"
+  inputs = ["format_logs"]
+  encoding.codec = "text"
+  encoding.text = "{{ formatted }}"
 
 [sinks.file_output]
   type = "file"
-  inputs = ["tag_http", "tag_syslog", "tag_files"]
+  inputs = ["format_logs"]
   path = "/var/log/vector/unified-%Y-%m-%d.log"
-  encoding.codec = "json"
+  encoding.codec = "text"
+  encoding.text = "{{ formatted }}"
