@@ -66,6 +66,13 @@ echo "✓ 目錄建立完成"
 echo ""
 echo "步驟 4: 配置 Vector Agent..."
 
+# 自動偵測本機 IP
+AGENT_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $7; exit}')
+if [ -z "$AGENT_IP" ]; then
+    AGENT_IP=$(hostname -I | awk '{print $1}')
+fi
+echo "偵測到本機 IP: $AGENT_IP"
+
 curl -fsSL https://raw.githubusercontent.com/lucklyms/vector-log-collection/master/vector-agent-simple.toml -o /etc/vector/vector.toml
 
 # 替換伺服器 IP
@@ -85,7 +92,7 @@ echo ""
 echo "步驟 5: 建立 systemd 服務..."
 
 if command -v systemctl &> /dev/null; then
-    cat > /etc/systemd/system/vector.service <<'EOF'
+    cat > /etc/systemd/system/vector.service <<EOF
 [Unit]
 Description=Vector Log Agent
 Documentation=https://vector.dev
@@ -96,6 +103,7 @@ Requires=network-online.target
 Type=simple
 User=root
 Group=root
+Environment="AGENT_IP=$AGENT_IP"
 ExecStart=/usr/local/bin/vector --config /etc/vector/vector.toml
 Restart=always
 RestartSec=5

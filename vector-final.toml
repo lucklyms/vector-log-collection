@@ -54,10 +54,8 @@
     .log_type = "http"
     .collected_at = now()
 
-    # 從 HTTP metadata 提取來源 IP
-    if exists(.source_ip) {
-      .agent_ip = .source_ip
-    }
+    # HTTP server 會在 metadata 中提供來源 IP
+    # 先保留，之後從連線資訊中提取
   '''
 
 # Syslog

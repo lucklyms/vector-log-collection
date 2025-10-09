@@ -42,9 +42,14 @@
   type = "remap"
   inputs = ["filter_vector_logs"]
   source = '''
-    # 自動取得本機 IP（優先使用環境變數，否則用 hostname）
-    # Vector 本身無法直接取得 IP，所以先用 hostname
-    # 實際 IP 會在發送到中央時由中央端從連線資訊取得
+    # 從環境變數取得 IP，若無則用 hostname
+    ip, err = get_env_var("AGENT_IP")
+    if err == null && ip != "" {
+      .agent_ip = ip
+    } else {
+      .agent_ip = get_hostname!()
+    }
+
     .agent_hostname = get_hostname!()
     .collected_at = now()
     .source_agent = "vector-agent"
