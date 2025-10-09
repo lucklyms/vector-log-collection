@@ -93,11 +93,19 @@ else
     exit 1
 fi
 
-# 建立 systemd 服務檔
+# 建立服務
 echo ""
-echo "步驟 5: 建立 systemd 服務..."
+echo "步驟 5: 建立服務..."
 
+# 清理可能存在的舊 Vector 進程
+echo "清理舊的 Vector 進程..."
+pkill -9 vector 2>/dev/null || true
+sleep 1
+
+# 偵測 init 系統
 if command -v systemctl &> /dev/null; then
+    # systemd 系統
+    echo "偵測到 systemd，建立 systemd 服務..."
     cat > /etc/systemd/system/vector.service <<EOF
 [Unit]
 Description=Vector Log Agent
@@ -118,18 +126,9 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-    echo "✓ systemd 服務檔已建立"
-
-    # 清理可能存在的舊 Vector 進程
-    echo "清理舊的 Vector 進程..."
-    pkill -9 vector 2>/dev/null || true
-    sleep 1
-
-    # 重新載入 systemd 並啟動服務
     systemctl daemon-reload
     systemctl enable vector
     systemctl start vector
-
     sleep 3
 
     if systemctl is-active --quiet vector; then
@@ -139,10 +138,147 @@ EOF
         echo "   journalctl -u vector -f"
         exit 1
     fi
+
+elif [ -f /etc/init.d/ ] || command -v service &> /dev/null; then
+    # SysVinit / init.d 系統
+    echo "偵測到 SysVinit，建立 init.d 服務..."
+    cat > /etc/init.d/vector <<'EOF'
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          vector
+# Required-Start:    $network $remote_fs $syslog
+# Required-Stop:     $network $remote_fs $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Vector Log Agent
+# Description:       Vector log collection agent
+### END INIT INFO
+
+AGENT_IP="AGENT_IP_PLACEHOLDER"
+export AGENT_IP
+
+case "$1" in
+    start)
+        echo "Starting Vector Agent..."
+        /usr/local/bin/vector --config /etc/vector/vector.toml >> /var/log/vector-agent/vector.log 2>&1 &
+        echo $! > /var/run/vector.pid
+        echo "Vector Agent started"
+        ;;
+    stop)
+        echo "Stopping Vector Agent..."
+        if [ -f /var/run/vector.pid ]; then
+            kill $(cat /var/run/vector.pid)
+            rm /var/run/vector.pid
+        fi
+        pkill -f "vector --config" || true
+        echo "Vector Agent stopped"
+        ;;
+    restart)
+        $0 stop
+        sleep 2
+        $0 start
+        ;;
+    status)
+        if [ -f /var/run/vector.pid ] && kill -0 $(cat /var/run/vector.pid) 2>/dev/null; then
+            echo "Vector Agent is running (PID: $(cat /var/run/vector.pid))"
+        else
+            echo "Vector Agent is not running"
+        fi
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac
+exit 0
+EOF
+
+    # 替換 AGENT_IP
+    sed -i "s/AGENT_IP_PLACEHOLDER/$AGENT_IP/g" /etc/init.d/vector
+    chmod +x /etc/init.d/vector
+
+    # 啟用服務
+    if command -v update-rc.d &> /dev/null; then
+        update-rc.d vector defaults
+    elif command -v chkconfig &> /dev/null; then
+        chkconfig --add vector
+        chkconfig vector on
+    fi
+
+    # 啟動服務
+    /etc/init.d/vector start
+    sleep 3
+
+    if /etc/init.d/vector status | grep -q running; then
+        echo "✓ Vector Agent 服務已啟動"
+    else
+        echo "✗ Vector Agent 啟動失敗，請檢查日誌："
+        echo "   tail -f /var/log/vector-agent/vector.log"
+        exit 1
+    fi
+
+elif command -v rc-update &> /dev/null; then
+    # OpenRC 系統 (Alpine Linux, Gentoo)
+    echo "偵測到 OpenRC，建立 OpenRC 服務..."
+    cat > /etc/init.d/vector <<EOF
+#!/sbin/openrc-run
+
+name="vector"
+description="Vector Log Agent"
+command="/usr/local/bin/vector"
+command_args="--config /etc/vector/vector.toml"
+command_background="yes"
+pidfile="/run/vector.pid"
+
+export AGENT_IP="$AGENT_IP"
+
+depend() {
+    need net
+    after firewall
+}
+EOF
+
+    chmod +x /etc/init.d/vector
+    rc-update add vector default
+    rc-service vector start
+    sleep 3
+
+    if rc-service vector status | grep -q started; then
+        echo "✓ Vector Agent 服務已啟動"
+    else
+        echo "✗ Vector Agent 啟動失敗，請檢查日誌："
+        echo "   tail -f /var/log/vector-agent/vector.log"
+        exit 1
+    fi
+
 else
-    # 手動啟動
-    nohup vector --config /etc/vector/vector.toml > /var/log/vector-agent/vector.log 2>&1 &
-    echo "✓ Vector Agent 已在背景啟動"
+    # 不支援的 init 系統，使用 cron + nohup
+    echo "⚠ 未偵測到支援的 init 系統，使用 cron 自動啟動..."
+
+    # 建立啟動腳本
+    cat > /usr/local/bin/vector-start.sh <<EOF
+#!/bin/bash
+export AGENT_IP="$AGENT_IP"
+if ! pgrep -f "vector --config /etc/vector/vector.toml" > /dev/null; then
+    /usr/local/bin/vector --config /etc/vector/vector.toml >> /var/log/vector-agent/vector.log 2>&1 &
+fi
+EOF
+    chmod +x /usr/local/bin/vector-start.sh
+
+    # 加入 crontab (每分鐘檢查一次)
+    (crontab -l 2>/dev/null | grep -v vector-start.sh; echo "* * * * * /usr/local/bin/vector-start.sh") | crontab -
+
+    # 立即啟動
+    /usr/local/bin/vector-start.sh
+    sleep 3
+
+    if pgrep -f "vector --config" > /dev/null; then
+        echo "✓ Vector Agent 已啟動 (使用 cron 監控)"
+        echo "  註：此系統將使用 cron 每分鐘檢查 Vector 是否運行"
+    else
+        echo "✗ Vector Agent 啟動失敗"
+        exit 1
+    fi
 fi
 
 # 測試發送
@@ -156,17 +292,36 @@ echo "==================================="
 echo "✓✓✓ Vector Agent 安裝完成！✓✓✓"
 echo "==================================="
 echo ""
-echo "服務狀態："
-echo "  檢查狀態: systemctl status vector"
-echo "  查看日誌: journalctl -u vector -f"
-echo "  重啟服務: systemctl restart vector"
+echo "服務管理："
+if command -v systemctl &> /dev/null; then
+    echo "  檢查狀態: systemctl status vector"
+    echo "  查看日誌: journalctl -u vector -f"
+    echo "  重啟服務: systemctl restart vector"
+    echo "  停止服務: systemctl stop vector"
+elif [ -f /etc/init.d/vector ]; then
+    if command -v rc-service &> /dev/null; then
+        echo "  檢查狀態: rc-service vector status"
+        echo "  重啟服務: rc-service vector restart"
+        echo "  停止服務: rc-service vector stop"
+    else
+        echo "  檢查狀態: service vector status (或 /etc/init.d/vector status)"
+        echo "  重啟服務: service vector restart (或 /etc/init.d/vector restart)"
+        echo "  停止服務: service vector stop (或 /etc/init.d/vector stop)"
+    fi
+    echo "  查看日誌: tail -f /var/log/vector-agent/vector.log"
+else
+    echo "  檢查狀態: ps aux | grep vector"
+    echo "  查看日誌: tail -f /var/log/vector-agent/vector.log"
+    echo "  停止服務: pkill -f 'vector --config'"
+    echo "  註：使用 cron 自動監控，每分鐘檢查一次"
+fi
 echo ""
 echo "本機日誌將自動回傳到: $VECTOR_SERVER"
 echo "收集的日誌類型："
-echo "  - 系統日誌 (journald/syslog)"
+echo "  - 系統日誌 (syslog/messages/auth.log)"
 echo "  - Apache/Nginx 日誌"
 echo "  - 應用程式日誌"
-echo "  - Docker 容器日誌"
+echo "  - /var/log 下所有日誌"
 echo ""
 echo "到中央伺服器查看日誌："
 echo "  tail -f /var/log/vector-collected/unified-\$(date +%Y-%m-%d).log"
