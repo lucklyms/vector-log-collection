@@ -8,7 +8,7 @@
   type = "journald"
   current_boot_only = false
   # 排除 vector 程序的日誌，避免收集自己的運行日誌造成迴圈
-  excludes = {_COMM = "vector"}
+  exclude_matches._COMM = ["vector"]
 
 # 收集 syslog
 [sources.syslog_file]
