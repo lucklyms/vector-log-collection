@@ -104,6 +104,8 @@
     # 安全處理 message 欄位
     if exists(.message) {
       .log_message = to_string!(.message)
+      # 移除原始 message 避免冗余
+      del(.message)
     } else {
       .log_message = ""
     }
