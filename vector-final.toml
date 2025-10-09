@@ -78,7 +78,7 @@
   type = "remap"
   inputs = ["tag_http", "tag_syslog", "tag_files"]
   source = '''
-    .source_ip = .agent_hostname || .host || "unknown"
+    .source_ip = .agent_ip || .agent_hostname || .host || "unknown"
 
     # 處理時間戳
     ts = .timestamp

@@ -37,11 +37,20 @@
     !(contains(message, " vector[") || contains(message, " vector:"))
   '''
 
-# 添加主機資訊
+# 添加主機資訊和 IP
 [transforms.add_host_info]
   type = "remap"
   inputs = ["filter_vector_logs"]
   source = '''
+    # 嘗試取得 IP 地址，失敗則用 hostname
+    ip_result, err = get_env_var("AGENT_IP")
+    if err == null && ip_result != "" {
+      .agent_ip = ip_result
+    } else {
+      # 使用 hostname，實際部署時可手動設定 AGENT_IP 環境變數
+      .agent_ip = get_hostname!()
+    }
+
     .agent_hostname = get_hostname!()
     .collected_at = now()
     .source_agent = "vector-agent"
