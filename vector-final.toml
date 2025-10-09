@@ -80,7 +80,14 @@
   source = '''
     .source_ip = .agent_hostname || .host || "unknown"
     .log_time = format_timestamp!(.timestamp, format: "%Y-%m-%d %H:%M:%S")
-    .log_message = to_string!(.message)
+
+    # 安全處理 message 欄位
+    if exists(.message) {
+      .log_message = to_string!(.message)
+    } else {
+      .log_message = ""
+    }
+
     .original_timestamp = .timestamp
   '''
 
