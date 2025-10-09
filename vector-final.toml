@@ -6,12 +6,10 @@
 
 # ==================== 數據源 ====================
 
-# HTTP 接收（自動記錄來源 IP）
+# HTTP 接收
 [sources.http_logs]
   type = "http_server"
   address = "0.0.0.0:8080"
-  encoding = "json"
-  # 自動將連線來源 IP 加入到事件中
   decoding.codec = "json"
 
 # Syslog UDP
