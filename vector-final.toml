@@ -78,11 +78,9 @@
   type = "remap"
   inputs = ["tag_http", "tag_syslog", "tag_files"]
   source = '''
-    .source_ip = .agent_hostname ?? .host ?? "unknown"
-    .log_time = format_timestamp!(.timestamp ?? now(), format: "%Y-%m-%d %H:%M:%S")
-    .log_message = to_string(.message) ?? ""
-
-    # 保留原始資料供查詢
+    .source_ip = .agent_hostname || .host || "unknown"
+    .log_time = format_timestamp!(.timestamp, format: "%Y-%m-%d %H:%M:%S")
+    .log_message = to_string!(.message)
     .original_timestamp = .timestamp
   '''
 
