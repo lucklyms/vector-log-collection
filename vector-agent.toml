@@ -60,7 +60,10 @@
 [transforms.filter_vector_logs]
   type = "filter"
   inputs = ["journald", "syslog_file", "apache_*", "nginx_*", "app_logs", "docker_logs"]
-  condition = '!contains(string!(.message), " vector[") && !contains(string!(.message), " vector:")'
+  condition = '''
+    message = to_string(.message) ?? ""
+    !(contains(message, " vector[") || contains(message, " vector:"))
+  '''
 
 # 添加主機資訊
 [transforms.add_host_info]
