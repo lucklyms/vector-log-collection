@@ -109,10 +109,9 @@
     }
 
     # 提取 SSH 登入來源 IP（從 sshd 日誌）
-    msg = to_string(.log_message) ?? ""
-    if contains(msg, "sshd") && contains(msg, "Accepted password") {
+    if contains(.log_message, "sshd") && contains(.log_message, "Accepted password") {
       # 匹配 "from IP port" 格式
-      parsed = parse_regex(msg, r'from (?P<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) port') ?? null
+      parsed = parse_regex(.log_message, r'from (?P<ip>\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}) port') ?? null
       if parsed != null {
         .login_ip = parsed.ip
       }
