@@ -80,12 +80,20 @@
   source = '''
     .source_ip = .agent_hostname || .host || "unknown"
 
-    # 處理時間戳（可能是字串或 timestamp 類型）
+    # 處理時間戳
     ts = .timestamp
-    if is_string(ts) {
-      .log_time = ts
-    } else {
+    if is_timestamp(ts) {
       .log_time = format_timestamp!(ts, format: "%Y-%m-%d %H:%M:%S")
+    } else if is_string(ts) {
+      # 嘗試解析字串為 timestamp 再格式化
+      parsed = parse_timestamp(ts, format: "%+") ?? null
+      if parsed != null {
+        .log_time = format_timestamp!(parsed, format: "%Y-%m-%d %H:%M:%S")
+      } else {
+        .log_time = ts
+      }
+    } else {
+      .log_time = to_string(ts)
     }
 
     # 安全處理 message 欄位
