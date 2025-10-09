@@ -6,11 +6,13 @@
 
 # ==================== 數據源 ====================
 
-# HTTP 接收
+# HTTP 接收（自動記錄來源 IP）
 [sources.http_logs]
   type = "http_server"
   address = "0.0.0.0:8080"
   encoding = "json"
+  # 自動將連線來源 IP 加入到事件中
+  decoding.codec = "json"
 
 # Syslog UDP
 [sources.syslog_udp]
@@ -44,13 +46,18 @@
 
 # ==================== 日誌轉換 ====================
 
-# HTTP 日誌
+# HTTP 日誌（自動提取來源 IP）
 [transforms.tag_http]
   type = "remap"
   inputs = ["http_logs"]
   source = '''
     .log_type = "http"
     .collected_at = now()
+
+    # 從 HTTP metadata 提取來源 IP
+    if exists(.source_ip) {
+      .agent_ip = .source_ip
+    }
   '''
 
 # Syslog
