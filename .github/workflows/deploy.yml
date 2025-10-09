@@ -23,9 +23,9 @@ jobs:
           cd /opt/vector-log-collection || mkdir -p /opt/vector-log-collection
           cd /opt/vector-log-collection
 
-          # 下載最新配置
-          curl -fsSL https://raw.githubusercontent.com/lucklyms/vector-log-collection/master/vector-final.toml -o vector-final.toml
-          curl -fsSL https://raw.githubusercontent.com/lucklyms/vector-log-collection/master/deploy-simple.sh -o deploy-simple.sh
+          # 下載最新配置（加時間戳避免快取）
+          curl -fsSL "https://raw.githubusercontent.com/lucklyms/vector-log-collection/master/vector-final.toml?$(date +%s)" -o vector-final.toml
+          curl -fsSL "https://raw.githubusercontent.com/lucklyms/vector-log-collection/master/deploy-simple.sh?$(date +%s)" -o deploy-simple.sh
           chmod +x deploy-simple.sh
 
           # 設定環境變數並執行部署
