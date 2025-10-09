@@ -78,7 +78,7 @@
 [sinks.send_to_central]
   type = "http"
   inputs = ["add_host_info"]
-  uri = "http://VECTOR_SERVER_IP:8080"
+  uri = "http://223.27.34.248:8080"
   encoding.codec = "json"
 
   # 批次發送設定
@@ -94,7 +94,7 @@
   type = "socket"
   inputs = ["add_host_info"]
   mode = "tcp"
-  address = "VECTOR_SERVER_IP:5601"
+  address = "223.27.34.248:5601"
   encoding.codec = "json"
 
 # 本地備份（可選）- 存放到不會被收集的目錄

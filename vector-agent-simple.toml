@@ -57,7 +57,7 @@
 [sinks.send_to_central]
   type = "http"
   inputs = ["add_host_info"]
-  uri = "http://VECTOR_SERVER_IP:8080"
+  uri = "http://223.27.34.248:8080"
   encoding.codec = "json"
 
   # 批次發送設定
