@@ -93,7 +93,7 @@
         .log_time = ts
       }
     } else {
-      .log_time = to_string(ts)
+      .log_time = to_string!(ts)
     }
 
     # 安全處理 message 欄位
