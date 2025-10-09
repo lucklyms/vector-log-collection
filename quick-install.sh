@@ -66,12 +66,18 @@ echo "✓ 目錄建立完成"
 echo ""
 echo "步驟 4: 配置 Vector Agent..."
 
-# 自動偵測本機 IP
-AGENT_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $7; exit}')
+# 自動偵測外網 IP
+echo "偵測外網 IP..."
+AGENT_IP=$(curl -s --connect-timeout 5 ifconfig.me 2>/dev/null)
 if [ -z "$AGENT_IP" ]; then
-    AGENT_IP=$(hostname -I | awk '{print $1}')
+    # 備用方法
+    AGENT_IP=$(curl -s --connect-timeout 5 icanhazip.com 2>/dev/null)
 fi
-echo "偵測到本機 IP: $AGENT_IP"
+if [ -z "$AGENT_IP" ]; then
+    # 如果無法取得外網 IP，使用內網 IP
+    AGENT_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $7; exit}')
+fi
+echo "偵測到 Agent IP: $AGENT_IP"
 
 curl -fsSL https://raw.githubusercontent.com/lucklyms/vector-log-collection/master/vector-agent-simple.toml -o /etc/vector/vector.toml
 
