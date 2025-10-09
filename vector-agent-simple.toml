@@ -22,7 +22,11 @@
     "/var/log/kern.log",
     "/var/log/daemon.log"
   ]
-  exclude = ["/var/log/vector/**", "/var/log/vector-agent/**"]
+  exclude = [
+    "/var/log/vector/**",
+    "/var/log/vector-agent/**",
+    "/var/log/apt/**"
+  ]
   read_from = "end"
   ignore_older_secs = 86400
 
