@@ -35,10 +35,16 @@
 
 # ==================== 數據轉換 ====================
 
+# 過濾掉 Vector 自己的日誌（從 syslog 中）
+[transforms.filter_vector_logs]
+  type = "filter"
+  inputs = ["var_log_system"]
+  condition = '!includes(string!(.message), "vector[") && !includes(string!(.message), "vector:")'
+
 # 添加主機資訊
 [transforms.add_host_info]
   type = "remap"
-  inputs = ["system_logs", "var_log_all", "var_log_system"]
+  inputs = ["system_logs", "var_log_all", "filter_vector_logs"]
   source = '''
     .agent_hostname = get_hostname!()
     .collected_at = now()
