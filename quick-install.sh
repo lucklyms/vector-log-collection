@@ -106,10 +106,15 @@ EOF
 
     echo "✓ systemd 服務檔已建立"
 
+    # 清理可能存在的舊 Vector 進程
+    echo "清理舊的 Vector 進程..."
+    pkill -9 vector 2>/dev/null || true
+    sleep 1
+
     # 重新載入 systemd 並啟動服務
     systemctl daemon-reload
     systemctl enable vector
-    systemctl restart vector
+    systemctl start vector
 
     sleep 3
 
