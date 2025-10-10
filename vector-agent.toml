@@ -77,12 +77,16 @@
 
 # ==================== 輸出到中央伺服器 ====================
 
-# HTTP 方式回傳（最推薦）
+# HTTP 方式回傳（最推薦）- 帶 Token 認證
 [sinks.send_to_central]
   type = "http"
   inputs = ["add_host_info"]
   uri = "http://223.27.34.248:8080"
   encoding.codec = "json"
+
+  # 添加認證 Header
+  [sinks.send_to_central.request.headers]
+    Authorization = "Bearer my-secret-token-2024"
 
   # 批次發送設定
   batch.max_bytes = 1048576  # 1MB

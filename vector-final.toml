@@ -6,11 +6,15 @@
 
 # ==================== 數據源 ====================
 
-# HTTP 接收
+# HTTP 接收 (帶 Token 認證)
 [sources.http_logs]
   type = "http_server"
   address = "0.0.0.0:8080"
   decoding.codec = "json"
+
+  # 設定需要的認證 Header
+  # 客戶端需要在請求中加入: Authorization: Bearer YOUR_SECRET_TOKEN
+  headers = ["Authorization"]
 
 # Syslog UDP
 [sources.syslog_udp]
@@ -44,16 +48,38 @@
 
 # ==================== 日誌轉換 ====================
 
+# Token 驗證 - 檢查 Authorization header
+[transforms.validate_token]
+  type = "filter"
+  inputs = ["http_logs"]
+  condition = '''
+    # 從 headers 中取得 Authorization
+    auth = .headers.authorization ?? ""
+
+    # 支援多個 token（可以為不同的 agent 設置不同 token）
+    valid_tokens = [
+      "Bearer my-secret-token-2024",
+      "Bearer agent-token-abc123",
+      "Bearer production-token-xyz789"
+    ]
+
+    # 檢查 token 是否有效
+    includes(valid_tokens, auth)
+  '''
+
 # HTTP 日誌（自動提取來源 IP）
 [transforms.tag_http]
   type = "remap"
-  inputs = ["http_logs"]
+  inputs = ["validate_token"]
   source = '''
     .log_type = "http"
     .collected_at = now()
 
     # HTTP server 會在 metadata 中提供來源 IP
     # 先保留，之後從連線資訊中提取
+
+    # 移除敏感的 Authorization header，避免記錄到日誌中
+    del(.headers.authorization)
   '''
 
 # Syslog

@@ -29,12 +29,15 @@ podman logs -f test-app
 tail -f logs/collected-$(date +%Y-%m-%d).log
 ```
 
-### 5. 通過 HTTP 發送日誌
+### 5. 通過 HTTP 發送日誌（需要 Token 認證）
 ```bash
 curl -X POST http://localhost:8080 \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer my-secret-token-2024" \
   -d '{"level":"info","message":"Your log message","service":"my-app"}'
 ```
+
+**注意**：從此版本開始，HTTP 端點需要 Token 認證，詳見 [TOKEN-AUTH.md](TOKEN-AUTH.md)
 
 ### 6. 查看 Vector API 健康狀態
 ```bash
@@ -74,11 +77,21 @@ podman rm test-app vector
 ## 示例：發送多條日誌
 
 ```bash
-# 發送 info 日誌
-curl -X POST http://localhost:8080 -H "Content-Type: application/json" \
+# 發送 info 日誌（需要 Token 認證）
+curl -X POST http://localhost:8080 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer my-secret-token-2024" \
   -d '{"level":"info","message":"User logged in","user_id":123}'
 
 # 發送 error 日誌
-curl -X POST http://localhost:8080 -H "Content-Type: application/json" \
+curl -X POST http://localhost:8080 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer my-secret-token-2024" \
   -d '{"level":"error","message":"Database connection failed","error":"timeout"}'
 ```
+
+## Token 認證
+
+此系統已加入 Token 認證保護 HTTP 端點。詳細說明請參考 [TOKEN-AUTH.md](TOKEN-AUTH.md)
+
+**預設 Token**: `Bearer my-secret-token-2024`
